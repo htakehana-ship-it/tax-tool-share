@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>自己居住用不動産 譲渡所得税試算ツール</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>自己居住用不動産 譲渡所得税試算ツール</h1>
+      </header>
+
+      <section class="card notice">
+        <h2>注意</h2>
+        <ul>
+          <li>このツールは自己居住用不動産（マイホーム）の売却に対応した参考計算です。</li>
+          <li>実際の納税額は税務署または税理士に必ず確認してください。</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>1. 売却価格を入力</h2>
+        <div class="grid">
+          <label>
+            売却価格（円）
+            <input id="salePrice" class="money-input required-input" type="text" inputmode="numeric" value="" />
+            <span class="doc-hint">確認書類: 売買契約書、売却時の精算書</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2. 取得費を入力（買ったときの費用）</h2>
+        <p class="hint">契約書・領収書・登記費用明細を見ながら入れてください。</p>
+
+        <div class="question required-group" data-required-group="acquisitionCostKnown">
+          <p>取得費の内訳がわかりますか？</p>
+          <label><input type="radio" name="acquisitionCostKnown" value="yes" /> はい（内訳を入力する）</label>
+          <label><input type="radio" name="acquisitionCostKnown" value="no" /> いいえ（概算取得費5%ルールを使う）</label>
+        </div>
+
+        <p class="hint">※「いいえ」を選ぶと、取得費は売却価格の5%で自動計算されます。</p>
+
+        <div id="acquisitionDetailGroup" class="branch">
+          <div class="grid">
+            <label>土地の購入代金（円）<input id="landPurchasePrice" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 売買契約書</span></label>
+            <label>建物の購入・建築代金（円）<input id="buildingPurchasePrice" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 売買契約書、建築請負契約書</span></label>
+            <label>建物の改良費・設備費（円）<input id="buildingImprovementCost" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: リフォーム契約書、領収書</span></label>
+            <label>購入時の仲介手数料（円）<input id="purchaseBrokerFee" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 仲介手数料領収書</span></label>
+            <label>購入時の印紙税（円）<input id="purchaseStampTax" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 売買契約書の印紙税額</span></label>
+            <label>登録免許税・登記費用（円）<input id="purchaseRegistrationTax" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 司法書士報酬明細、登記費用明細</span></label>
+            <label>不動産取得税（円）<input id="purchaseRealEstateTax" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 納税通知書、領収証書</span></label>
+            <label>その他の取得費（円）<input id="purchaseOtherCost" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 各費用の領収書</span></label>
+          </div>
+          <details class="guide">
+            <summary>何を入れる？（取得費）</summary>
+            <ul>
+              <li>入れる: 購入代金、購入手数料、改良費、設備費、登録免許税、不動産取得税</li>
+              <li>入れない: 固定資産税、修繕費、火災保険料などの維持管理費</li>
+            </ul>
+          </details>
+        </div>
+      </section>
+
+      <section id="depreciationCard" class="card">
+        <h2>3. 減価償却の入力方法を選ぶ</h2>
+        <div class="question required-group" data-required-group="depreciationKnown">
+          <p>減価償却累計額がわかりますか？</p>
+          <label><input type="radio" name="depreciationKnown" value="no" /> いいえ（自動計算する）</label>
+          <label><input type="radio" name="depreciationKnown" value="yes" /> はい（手入力する）</label>
+        </div>
+
+        <div id="autoDepGroup" class="branch hidden">
+          <div class="grid">
+            <label>
+              登記簿の建物構造
+              <select id="structureType" class="required-input">
+                <option value="" selected>選択してください</option>
+                <option value="rc">鉄筋コンクリート造（RC）</option>
+                <option value="src">鉄骨鉄筋コンクリート造（SRC）</option>
+                <option value="steel">鉄骨造</option>
+                <option value="light_steel">軽量鉄骨造</option>
+                <option value="wood">木造</option>
+                <option value="wood_mortar">木骨モルタル造</option>
+                <option value="brick_block_stone">れんが造・ブロック造・石造</option>
+              </select>
+              <span class="doc-hint">確認書類: 登記事項証明書（建物の構造欄）</span>
+            </label>
+            <label>
+              償却率（自動反映）
+              <input id="depreciationRate" type="number" min="0" step="0.001" value="" readonly />
+            </label>
+            <label>
+              計算係数（自動反映: 0.9）
+              <input id="depreciationBaseFactor" type="number" min="0" step="0.01" value="" readonly />
+            </label>
+            <label>
+              経過年数（自動計算）
+              <input id="depreciationYearsAuto" type="text" value="取得日〜売却日から自動計算" readonly />
+            </label>
+          </div>
+        </div>
+
+        <div id="manualDepGroup" class="branch hidden">
+          <div class="grid">
+            <label>
+              減価償却累計額（円）
+              <input id="manualDepreciationTotal" class="money-input" type="text" inputmode="numeric" value="" />
+              <span class="doc-hint">確認書類: 過去申告書の計算明細</span>
+            </label>
+          </div>
+        </div>
+
+        <p id="depreciationInfo" class="hint"></p>
+      </section>
+
+      <section class="card">
+        <h2>4. 譲渡費用を入力（売るための直接費用）</h2>
+        <p class="hint">売却時の契約書・精算書・領収書を見ながら入れてください。</p>
+        <div class="grid">
+          <label>売却時の仲介手数料（円）<input id="sellBrokerFee" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 媒介契約書、領収書</span></label>
+          <label>売主負担の印紙税（円）<input id="sellStampTax" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 売買契約書の印紙税額</span></label>
+          <label>建物取壊し費用（円）<input id="sellDemolitionCost" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 解体工事契約書、領収書</span></label>
+          <label>測量費（円）<input id="sellSurveyCost" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 測量会社の請求書、領収書</span></label>
+          <label>その他の譲渡費用（円）<input id="sellOtherCost" class="money-input" type="text" inputmode="numeric" value="" /><span class="doc-hint">確認書類: 売却に直接要した費用の領収書</span></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>5. 質問に答えると特例を自動判定</h2>
+        <div class="grid">
+          <label>
+            判定方法
+            <select id="holdingMode" class="required-input">
+              <option value="" selected>選択してください</option>
+              <option value="auto">自動判定（取得日と売却日から）</option>
+              <option value="long">長期（5年超）に固定</option>
+              <option value="short">短期（5年以下）に固定</option>
+            </select>
+          </label>
+          <label>取得日<input id="acquisitionDate" class="required-input" type="date" value="" /><span class="doc-hint">確認書類: 売買契約書、登記事項証明書</span></label>
+          <label>売却日<input id="transferDate" class="required-input" type="date" value="" /><span class="doc-hint">確認書類: 売買契約書、引渡日資料</span></label>
+          <label>その他特別控除（円）<input id="otherSpecialDeduction" class="money-input" type="text" inputmode="numeric" value="" /></label>
+        </div>
+
+        <div class="question required-group" data-required-group="homeQ1_residence">
+          <p>この物件はあなたが住んでいたマイホームですか？</p>
+          <label><input type="radio" name="homeQ1_residence" value="yes" /> はい</label>
+          <label><input type="radio" name="homeQ1_residence" value="no" /> いいえ</label>
+        </div>
+        <div class="question required-group" data-required-group="homeQ2_not_related">
+          <p>買主は配偶者・直系血族・同族会社など特別な関係者ではないですか？</p>
+          <label><input type="radio" name="homeQ2_not_related" value="yes" /> はい</label>
+          <label><input type="radio" name="homeQ2_not_related" value="no" /> いいえ</label>
+        </div>
+        <div class="question required-group" data-required-group="homeQ3_no_recent">
+          <p>売却年の前年・前々年に3,000万円控除など同種特例を使っていませんか？</p>
+          <label><input type="radio" name="homeQ3_no_recent" value="yes" /> はい</label>
+          <label><input type="radio" name="homeQ3_no_recent" value="no" /> いいえ</label>
+        </div>
+        <div class="question required-group" data-required-group="reducedQ1_no_recent">
+          <p>売却年の前年・前々年に軽減税率の特例を使っていませんか？</p>
+          <label><input type="radio" name="reducedQ1_no_recent" value="yes" /> はい</label>
+          <label><input type="radio" name="reducedQ1_no_recent" value="no" /> いいえ</label>
+        </div>
+
+        <div class="question">
+          <p>判定結果を見て、実際に使う制度を選んでください</p>
+          <label><input id="useHome3000" type="checkbox" /> 居住用財産を譲渡した場合の3,000万円の特別控除の特例を使う</label>
+          <label><input id="useReducedRate" type="checkbox" /> 居住用財産を譲渡した場合の軽減税率の特例を使う</label>
+          <p class="hint">新居で住宅ローン控除を使う場合など、3,000万円の特別控除の特例だけ外せます。</p>
+        </div>
+
+        <p id="holdingResult" class="hint"></p>
+        <p id="specialResult" class="hint"></p>
+        <p class="hint">※質問回答による簡易判定です。最終判定は税務署または税理士へ確認してください。</p>
+        <p id="specialConditionNote" class="hint"></p>
+      </section>
+
+      <section class="card result">
+        <h2>6. 計算結果</h2>
+        <div class="summary">
+          <p>取得費合計（償却前）: <strong id="acquisitionCostTotal">-</strong></p>
+          <p>減価償却累計額（使用値）: <strong id="depreciationTotalUsed">-</strong></p>
+          <p>取得費（償却後）: <strong id="adjustedAcquisitionCost">-</strong></p>
+          <p>譲渡費用合計: <strong id="transferExpensesTotal">-</strong></p>
+          <p>譲渡所得（課税前）: <strong id="gainBeforeTax">-</strong></p>
+          <p>適用控除合計: <strong id="effectiveDeduction">-</strong></p>
+          <p>課税譲渡所得: <strong id="taxableGain">-</strong></p>
+          <p>合計税額: <strong id="totalTax">-</strong></p>
+        </div>
+        <div class="breakdown">
+          <p>所得税: <span id="incomeTax">-</span></p>
+          <p>復興特別所得税: <span id="reconstructionTax">-</span></p>
+          <p>住民税: <span id="residentTax">-</span></p>
+        </div>
+        <p id="rateNote" class="hint"></p>
+        <pre id="formula"></pre>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

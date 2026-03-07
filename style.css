@@ -29,8 +29,8 @@ header {
 }
 
 .company-logo {
-  max-width: 220px;
-  width: min(52vw, 220px);
+  max-width: 300px;
+  width: min(68vw, 300px);
   height: auto;
   display: block;
 }

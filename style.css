@@ -25,16 +25,21 @@ body {
 }
 
 header {
-  display: grid;
-  gap: 10px;
-  justify-items: start;
+  display: block;
 }
 
 .company-logo {
-  max-width: 320px;
-  width: min(68vw, 320px);
+  max-width: 220px;
+  width: min(52vw, 220px);
   height: auto;
   display: block;
+}
+
+.site-footer {
+  margin-top: 22px;
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 0;
 }
 
 h1 {

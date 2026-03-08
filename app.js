@@ -1,5 +1,9 @@
 const moneyInputIds = [
-  "salePrice",
+  "saleLandPrice",
+  "saleBuildingPrice",
+  "saleTotalPriceInput",
+  "fixedAssetLandValue",
+  "fixedAssetBuildingValue",
   "landPurchasePrice",
   "buildingPurchasePrice",
   "buildingImprovementCost",
@@ -31,6 +35,13 @@ const ids = [
 const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 
 const out = {
+  saleTotalPreview: document.getElementById("saleTotalPreview"),
+  saleLandAllocatedPreview: document.getElementById("saleLandAllocatedPreview"),
+  saleBuildingAllocatedPreview: document.getElementById("saleBuildingAllocatedPreview"),
+  salePriceUsed: document.getElementById("salePriceUsed"),
+  saleLandUsed: document.getElementById("saleLandUsed"),
+  saleBuildingUsed: document.getElementById("saleBuildingUsed"),
+  saleAllocationNote: document.getElementById("saleAllocationNote"),
   acquisitionCostTotal: document.getElementById("acquisitionCostTotal"),
   depreciationTotalUsed: document.getElementById("depreciationTotalUsed"),
   adjustedAcquisitionCost: document.getElementById("adjustedAcquisitionCost"),
@@ -180,17 +191,51 @@ function calcDepreciation() {
   const factor = Math.max(0, factorRaw || 0.9);
 
   const raw = buildingBase * factor * rate * years;
-  const amount = Math.floor(Math.min(buildingBase, Math.max(0, raw)));
+  const depreciationCap = buildingBase * 0.95;
+  const amount = Math.floor(Math.min(depreciationCap, Math.max(0, raw)));
 
   return {
     amount,
-    note: `自動計算: 建物取得価額 ${yen(buildingBase)} × 0.9 × 償却率 ${rate.toFixed(3)} × 経過年数 ${years}年`,
-    formula: `減価償却累計額 = floor(min(建物取得価額, 建物取得価額 × 0.9 × 償却率 × 経過年数)) = ${yen(amount)}`,
+    note: `自動計算: 建物取得価額 ${yen(buildingBase)} × 0.9 × 償却率 ${rate.toFixed(3)} × 経過年数 ${years}年（上限: 建物取得価額の95%）`,
+    formula: `減価償却累計額 = floor(min(建物取得価額×95%, 建物取得価額 × 0.9 × 償却率 × 経過年数)) = ${yen(amount)}`,
   };
 }
 
 function calculate() {
-  const salePrice = moneyValue("salePrice");
+  const saleBreakdownMode = getRadioValue("saleBreakdownKnown");
+  const saleBreakdownKnown = saleBreakdownMode === "yes";
+  let salePrice = 0;
+  let saleLandUsed = 0;
+  let saleBuildingUsed = 0;
+  let saleAllocationNote = "";
+
+  if (saleBreakdownMode === "yes") {
+    saleLandUsed = moneyValue("saleLandPrice");
+    saleBuildingUsed = moneyValue("saleBuildingPrice");
+    salePrice = saleLandUsed + saleBuildingUsed;
+    saleAllocationNote = "売却価格は土地・建物の入力内訳をそのまま使用しています。";
+  } else if (saleBreakdownMode === "no") {
+    const saleTotal = moneyValue("saleTotalPriceInput");
+    const fixedAssetLand = moneyValue("fixedAssetLandValue");
+    const fixedAssetBuilding = moneyValue("fixedAssetBuildingValue");
+    const fixedAssetTotal = fixedAssetLand + fixedAssetBuilding;
+
+    salePrice = saleTotal;
+    if (fixedAssetTotal > 0) {
+      saleLandUsed = Math.floor((saleTotal * fixedAssetLand) / fixedAssetTotal);
+      saleBuildingUsed = Math.max(0, saleTotal - saleLandUsed);
+      saleAllocationNote =
+        "売却価格総額を固定資産税評価額（土地/建物）比で自動按分して、土地・建物内訳を算出しています。";
+    } else {
+      saleLandUsed = 0;
+      saleBuildingUsed = 0;
+      saleAllocationNote = "固定資産税評価額の合計が0のため、土地・建物内訳を按分できていません。";
+    }
+  }
+
+  out.saleTotalPreview.value = saleBreakdownMode === "yes" ? formatWithComma(saleLandUsed + saleBuildingUsed) : "";
+  out.saleLandAllocatedPreview.value = saleBreakdownMode === "no" ? formatWithComma(saleLandUsed) : "";
+  out.saleBuildingAllocatedPreview.value = saleBreakdownMode === "no" ? formatWithComma(saleBuildingUsed) : "";
   const acquisitionCostKnown = getRadioValue("acquisitionCostKnown") === "yes";
 
   const acquisitionCostInputTotal =
@@ -232,6 +277,7 @@ function calculate() {
   const holding = calcHolding();
   out.holdingResult.textContent = holding.label;
   out.depreciationInfo.textContent = depreciation.note;
+  out.saleAllocationNote.textContent = saleAllocationNote;
 
   const messages = [];
   if (!acquisitionCostKnown) {
@@ -287,6 +333,9 @@ function calculate() {
   const totalTax = incomeTax + reconstructionTax + residentTax;
 
   out.acquisitionCostTotal.textContent = yen(acquisitionCostTotal);
+  out.salePriceUsed.textContent = yen(salePrice);
+  out.saleLandUsed.textContent = yen(saleLandUsed);
+  out.saleBuildingUsed.textContent = yen(saleBuildingUsed);
   out.depreciationTotalUsed.textContent = yen(depreciation.amount);
   out.adjustedAcquisitionCost.textContent = yen(adjustedAcquisitionCost);
   out.transferExpensesTotal.textContent = yen(transferExpensesTotal);
@@ -301,6 +350,7 @@ function calculate() {
   out.specialConditionNote.textContent = messages.join(" ");
 
   out.formula.textContent = [
+    `売却価格（使用値） = ${yen(salePrice)}（土地 ${yen(saleLandUsed)} / 建物 ${yen(saleBuildingUsed)}）`,
     acquisitionCostKnown
       ? `取得費合計（償却前） = ${yen(acquisitionCostTotal)}`
       : `取得費（概算5%） = ${yen(salePrice)} × 5% = ${yen(acquisitionCostTotal)}`,
@@ -332,6 +382,10 @@ function syncStructureRate() {
 }
 
 function updateBranchingUI() {
+  const saleBreakdownKnown = getRadioValue("saleBreakdownKnown");
+  document.getElementById("saleBreakdownKnownGroup").classList.toggle("hidden", saleBreakdownKnown !== "yes");
+  document.getElementById("saleBreakdownAutoGroup").classList.toggle("hidden", saleBreakdownKnown !== "no");
+
   const acquisitionCostKnown = getRadioValue("acquisitionCostKnown") === "yes";
   document.getElementById("acquisitionDetailGroup").classList.toggle("hidden", !acquisitionCostKnown);
   document.getElementById("depreciationCard").classList.toggle("hidden", !acquisitionCostKnown);
@@ -359,7 +413,7 @@ function updateBranchingUI() {
 }
 
 function updateRequiredHighlights() {
-  const mustInputIds = ["salePrice", "holdingMode", "acquisitionDate", "transferDate"];
+  const mustInputIds = ["holdingMode", "acquisitionDate", "transferDate"];
   for (const id of mustInputIds) {
     const node = el[id];
     if (!node) continue;
@@ -369,6 +423,7 @@ function updateRequiredHighlights() {
 
   const acquisitionCostKnown = getRadioValue("acquisitionCostKnown");
   const depreciationKnown = getRadioValue("depreciationKnown");
+  const saleBreakdownKnown = getRadioValue("saleBreakdownKnown");
 
   for (const group of document.querySelectorAll(".required-group")) {
     const name = group.getAttribute("data-required-group");
@@ -387,6 +442,21 @@ function updateRequiredHighlights() {
     const node = el[id];
     if (!node) continue;
     const missing = needsDepFields && String(node.value).trim() === "";
+    node.classList.toggle("is-required-missing", missing);
+  }
+
+  const saleKnownRequired = saleBreakdownKnown === "yes";
+  const saleAutoRequired = saleBreakdownKnown === "no";
+  for (const id of ["saleLandPrice", "saleBuildingPrice"]) {
+    const node = el[id];
+    if (!node) continue;
+    const missing = saleKnownRequired && String(node.value).trim() === "";
+    node.classList.toggle("is-required-missing", missing);
+  }
+  for (const id of ["saleTotalPriceInput", "fixedAssetLandValue", "fixedAssetBuildingValue"]) {
+    const node = el[id];
+    if (!node) continue;
+    const missing = saleAutoRequired && String(node.value).trim() === "";
     node.classList.toggle("is-required-missing", missing);
   }
 }

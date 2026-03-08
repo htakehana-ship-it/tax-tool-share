@@ -22,13 +22,59 @@
 
       <section class="card">
         <h2>1. 売却価格を入力</h2>
-        <div class="grid">
-          <label>
-            売却価格（円）
-            <input id="salePrice" class="money-input required-input" type="text" inputmode="numeric" value="" />
-            <span class="doc-hint">確認書類: 売買契約書、売却時の精算書</span>
-          </label>
+        <div class="question required-group" data-required-group="saleBreakdownKnown">
+          <p>売却価格の土地・建物内訳はわかりますか？</p>
+          <label><input type="radio" name="saleBreakdownKnown" value="yes" /> はい（土地・建物を直接入力）</label>
+          <label><input type="radio" name="saleBreakdownKnown" value="no" /> いいえ（総額を固定資産評価額で按分）</label>
         </div>
+
+        <div id="saleBreakdownKnownGroup" class="branch hidden">
+          <div class="grid">
+            <label>
+              売却価格（土地）（円）
+              <input id="saleLandPrice" class="money-input required-input" type="text" inputmode="numeric" value="" />
+              <span class="doc-hint">確認書類: 売買契約書、精算書</span>
+            </label>
+            <label>
+              売却価格（建物）（円）
+              <input id="saleBuildingPrice" class="money-input required-input" type="text" inputmode="numeric" value="" />
+              <span class="doc-hint">確認書類: 売買契約書、精算書</span>
+            </label>
+            <label>
+              売却価格（総額・自動計算）（円）
+              <input id="saleTotalPreview" type="text" value="" readonly />
+            </label>
+          </div>
+        </div>
+
+        <div id="saleBreakdownAutoGroup" class="branch hidden">
+          <div class="grid">
+            <label>
+              売却価格（総額）（円）
+              <input id="saleTotalPriceInput" class="money-input required-input" type="text" inputmode="numeric" value="" />
+              <span class="doc-hint">確認書類: 売買契約書</span>
+            </label>
+            <label>
+              固定資産税評価額（土地）（円）
+              <input id="fixedAssetLandValue" class="money-input required-input" type="text" inputmode="numeric" value="" />
+              <span class="doc-hint">確認書類: 固定資産税課税明細書</span>
+            </label>
+            <label>
+              固定資産税評価額（建物）（円）
+              <input id="fixedAssetBuildingValue" class="money-input required-input" type="text" inputmode="numeric" value="" />
+              <span class="doc-hint">確認書類: 固定資産税課税明細書</span>
+            </label>
+            <label>
+              按分後 売却価格（土地）（円）
+              <input id="saleLandAllocatedPreview" type="text" value="" readonly />
+            </label>
+            <label>
+              按分後 売却価格（建物）（円）
+              <input id="saleBuildingAllocatedPreview" type="text" value="" readonly />
+            </label>
+          </div>
+        </div>
+        <p id="saleAllocationNote" class="hint"></p>
       </section>
 
       <section class="card">
@@ -182,6 +228,9 @@
       <section class="card result">
         <h2>6. 計算結果</h2>
         <div class="summary">
+          <p>売却価格（使用値）: <strong id="salePriceUsed">-</strong></p>
+          <p>売却価格内訳（土地）: <strong id="saleLandUsed">-</strong></p>
+          <p>売却価格内訳（建物）: <strong id="saleBuildingUsed">-</strong></p>
           <p>取得費合計（償却前）: <strong id="acquisitionCostTotal">-</strong></p>
           <p>減価償却累計額（使用値）: <strong id="depreciationTotalUsed">-</strong></p>
           <p>取得費（償却後）: <strong id="adjustedAcquisitionCost">-</strong></p>
